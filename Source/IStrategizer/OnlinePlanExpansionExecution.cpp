@@ -213,10 +213,10 @@ void OnlinePlanExpansionExecution::UpdateBelongingSubplanChildrenWithParentReadi
     {
         for (auto childId : children)
         {
-            _ASSERTE(GetNodeData(childId).WaitOnParentsCount > 0);
-
             if (GetNodeData(childId).SatisfyingGoal != nodeId)
             {
+                _ASSERTE(GetNodeData(childId).WaitOnParentsCount > 0);
+
                 LogInfo("Update node[%d] '%s' with parent readiness", childId, m_pOlcbpPlan->GetNode(childId)->ToString().c_str());
                 GetNodeData(childId).DecWaitOnParentsCount();
             }
@@ -282,7 +282,8 @@ void IStrategizer::OnlinePlanExpansionExecution::UpdateGoalNode(_In_ IOlcbpPlan:
         // This is the node first time expansion
         else
         {
-            if (clock.ElapsedGameCycles() > 1 && (GoalEx*)pCurrentPlanStep->SuccessConditionsSatisfied(*g_Game))
+            GoalEx* currentGoalNode = (GoalEx*)pCurrentPlanStep;
+            if (clock.ElapsedGameCycles() > 1 && currentGoalNode->SuccessConditionsSatisfied(*g_Game))
             {
                 LogInfo("Goal already satisfied, no need to expand it");
             }
@@ -299,7 +300,8 @@ void IStrategizer::OnlinePlanExpansionExecution::UpdateGoalNode(_In_ IOlcbpPlan:
                     exclusions.insert(GetNodeData(satisfyingGoalNode).BelongingCase);
                 }
 
-                CaseEx* caseEx = m_pCbReasoner->Retriever()->Retrieve((GoalEx*)pCurrentPlanStep, g_Game->Self()->State(), exclusions);
+                currentGoalNode->AdaptParameters(*g_Game);
+                CaseEx* caseEx = m_pCbReasoner->Retriever()->Retrieve(currentGoalNode, g_Game->Self()->State(), exclusions);
                 // Retriever should always retrieve a non tried case for that specific node
                 _ASSERTE(!IsCaseTried(currentNode, caseEx));
 
@@ -526,7 +528,7 @@ bool OnlinePlanExpansionExecution::DestroyGoalPlanIfExist(_In_ IOlcbpPlan::NodeI
     // 2. Remove visited nodes from the plan
     for (auto visitedNodeId : visitedNodes)
     {
-        auto currNode = m_pOlcbpPlan->GetNode(visitedNodeId);
+        //auto currNode = m_pOlcbpPlan->GetNode(visitedNodeId);
         m_pOlcbpPlan->RemoveNode(visitedNodeId);
         m_nodeData.erase(visitedNodeId);
         
